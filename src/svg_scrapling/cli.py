@@ -31,7 +31,7 @@ from svg_scrapling.reporting import (
     manifest_record_to_candidate,
     render_summary_text,
 )
-from svg_scrapling.runtime import RuntimeFactories, build_pipeline_dependencies
+from svg_scrapling.runtime import build_default_pipeline_dependencies
 from svg_scrapling.storage import RunLayout
 
 app = typer.Typer(
@@ -138,10 +138,7 @@ def _single_asset_layout(asset_path: Path) -> RunLayout:
 
 
 def _build_pipeline_dependencies(_config: FindAssetsConfig) -> PipelineDependencies:
-    return build_pipeline_dependencies(
-        _config,
-        factories=RuntimeFactories(),
-    )
+    return build_default_pipeline_dependencies(_config)
 
 
 def _version_callback(value: bool) -> None:

@@ -65,5 +65,7 @@ def build_pipeline_dependencies(
             converter=factories.converter_factory(),
             svg_post_processor=factories.svg_post_processor_factory(),
         )
+    except RuntimeCompositionError:
+        raise
     except Exception as exc:  # noqa: BLE001
         raise RuntimeCompositionError(f"Runtime composition failed: {exc}") from exc
