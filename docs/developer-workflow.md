@@ -10,6 +10,32 @@ uv sync --group dev
 
 The conversion backend currently requires Python `>=3.10,<3.14` because the upstream VTracer binding is unstable on Python `3.14`. Follow-up work is tracked in GitHub issue `#20`.
 
+## Running The CLI
+
+The default `assets find` command now assembles a real runtime by default.
+
+Example:
+
+```bash
+uv run assets find \
+  --query "tiger coloring page" \
+  --count 10 \
+  --preferred-format svg \
+  --fallback-format png \
+  --convert-to svg \
+  --mode provenance_only \
+  --provider duckduckgo_html \
+  --run-id demo-run \
+  --output ./data/runs
+```
+
+Operational notes:
+
+- `--output` is the base directory that contains one or more run directories.
+- `--run-id` makes the run resumable and reuses the same run directory on later executions.
+- `--skip-existing-downloads` is enabled by default so deterministic original asset paths are not downloaded twice.
+- `--disable-provider` can explicitly block a provider for a run and should fail loudly if it conflicts with the selected provider.
+
 ## Validation
 
 Run the full local validation set before push:
@@ -30,6 +56,8 @@ Run artifacts live under `data/runs/<run-id>/` or another explicitly chosen outp
 - `originals/` stores downloaded source assets.
 - `derived/` stores converted SVG outputs.
 - `manifests/manifest.jsonl` is the canonical machine-readable output.
+- `manifests/summary.json` and `manifests/summary.txt` store operator-facing run summaries.
+- `manifests/rejected_candidates.jsonl` stores structured rejection and failure diagnostics.
 - `logs/` stores run logs when the pipeline writes them.
 - `debug/` is for temporary debugging artifacts that must not be committed.
 
@@ -45,3 +73,21 @@ Work directly on `main` unless a change is risky enough to justify a dedicated b
 - Keep runtime artifacts inside run directories, not in source directories.
 - Prefer fixture-backed tests for fetch, extraction, conversion, and manifest behavior.
 - Preserve canonical `manifest.jsonl` as the source of truth; reports and summaries are derived outputs.
+
+## Provider Extension Workflow
+
+When adding a new discovery provider:
+
+1. Add the provider implementation under `src/svg_scrapling/search/`.
+2. Keep provider-specific HTTP behavior isolated from pipeline orchestration.
+3. Add a new `DiscoveryProvider` enum value in `src/svg_scrapling/config/models.py`.
+4. Wire the provider in `src/svg_scrapling/runtime/providers.py`.
+5. Add fixture-backed unit tests for result parsing and runtime selection.
+6. Update this document and `README.md` with the newly supported provider and any runtime constraints.
+
+Provider changes should preserve:
+
+- explicit provenance capture on discovered pages
+- conservative failure behavior
+- deterministic result normalization
+- no silent fallback to unsupported provider states
