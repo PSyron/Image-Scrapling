@@ -1,5 +1,11 @@
 """Raster-to-vector conversion interfaces and backends."""
 
+from svg_scrapling.conversion.svg_cleanup import (
+    SvgCleanupError,
+    SvgCleanupResult,
+    SvgPostProcessor,
+    SvgoCommandOptimizer,
+)
 from svg_scrapling.conversion.vtracer_backend import (
     ConversionPreset,
     RasterToSvgConverter,
@@ -15,6 +21,10 @@ from svg_scrapling.conversion.vtracer_backend import (
 __all__ = [
     "ConversionPreset",
     "RasterToSvgConverter",
+    "SvgCleanupError",
+    "SvgCleanupResult",
+    "SvgPostProcessor",
+    "SvgoCommandOptimizer",
     "SubprocessVTracerRunner",
     "VTracerConverter",
     "VTracerInvocation",
