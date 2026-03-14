@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from threading import BoundedSemaphore
@@ -20,12 +20,25 @@ from svg_scrapling.config import FetchStrategy
 class FetchError(RuntimeError):
     """Explicit fetch failure."""
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        url: str | None = None,
+        status_code: int | None = None,
+        retryable: bool = True,
+    ) -> None:
+        super().__init__(message)
+        self.url = url
+        self.status_code = status_code
+        self.retryable = retryable
+
 
 @dataclass(frozen=True)
 class FetchRequest:
     url: str
     strategy: FetchStrategy = FetchStrategy.STATIC_FIRST
-    timeout_seconds: float = 10.0
+    timeout_seconds: float | None = None
     headers: dict[str, str] = field(default_factory=dict)
 
 
@@ -70,9 +83,18 @@ class UrllibTransport:
                 return response.status, body, response_headers, final_url
         except HTTPError as exc:
             body = exc.read().decode("utf-8", errors="replace")
-            raise FetchError(f"HTTP {exc.code} for {url}: {body[:200]}") from exc
+            raise FetchError(
+                f"HTTP {exc.code} for {url}: {body[:200]}",
+                url=url,
+                status_code=exc.code,
+                retryable=exc.code in {408, 425, 429, 500, 502, 503, 504},
+            ) from exc
         except URLError as exc:
-            raise FetchError(f"Request failed for {url}: {exc.reason}") from exc
+            raise FetchError(
+                f"Request failed for {url}: {exc.reason}",
+                url=url,
+                retryable=True,
+            ) from exc
 
 
 class DomainConcurrencyController:
@@ -104,15 +126,21 @@ class StaticHtmlFetcher:
         transport: StaticFetchTransport | None = None,
         *,
         retries: int = 2,
+        retry_backoff_seconds: float = 0.5,
         domain_interval_seconds: float = 0.0,
         concurrency: DomainConcurrencyController | None = None,
+        default_timeout_seconds: float = 10.0,
+        default_headers: Mapping[str, str] | None = None,
         clock: Callable[[], float] = monotonic,
         sleeper: Callable[[float], None] = sleep,
     ) -> None:
         self._transport = transport or UrllibTransport()
         self._retries = retries
+        self._retry_backoff_seconds = retry_backoff_seconds
         self._domain_interval_seconds = domain_interval_seconds
         self._concurrency = concurrency or DomainConcurrencyController()
+        self._default_timeout_seconds = default_timeout_seconds
+        self._default_headers = dict(default_headers or {})
         self._clock = clock
         self._sleeper = sleeper
         self._last_request_at: dict[str, float] = {}
@@ -128,8 +156,8 @@ class StaticHtmlFetcher:
                 try:
                     status_code, html, headers, final_url = self._transport.fetch(
                         request.url,
-                        request.timeout_seconds,
-                        request.headers,
+                        self._resolve_timeout_seconds(request),
+                        self._resolve_headers(request),
                     )
                     document = Selector(html, url=final_url)
                     self._last_request_at[domain] = self._clock()
@@ -146,8 +174,12 @@ class StaticHtmlFetcher:
                     )
                 except FetchError as exc:
                     last_error = exc
+                    self._last_request_at[domain] = self._clock()
+                    if not exc.retryable:
+                        break
                     if attempt == self._retries + 1:
                         break
+                    self._sleeper(self._retry_backoff_seconds * attempt)
             raise last_error or FetchError(f"Failed to fetch {request.url}")
 
     def _apply_rate_limit(self, domain: str) -> None:
@@ -161,6 +193,14 @@ class StaticHtmlFetcher:
         remaining = self._domain_interval_seconds - elapsed
         if remaining > 0:
             self._sleeper(remaining)
+
+    def _resolve_timeout_seconds(self, request: FetchRequest) -> float:
+        return request.timeout_seconds or self._default_timeout_seconds
+
+    def _resolve_headers(self, request: FetchRequest) -> dict[str, str]:
+        headers = dict(self._default_headers)
+        headers.update(request.headers)
+        return headers
 
 
 class DynamicFetchClient(Protocol):
@@ -213,7 +253,10 @@ class FetchOrchestrator:
                 f"{request.strategy.value} requires a dynamic client, but none is available"
             )
 
-        html, final_url = self._dynamic_client.fetch_html(request.url, request.timeout_seconds)
+        html, final_url = self._dynamic_client.fetch_html(
+            request.url,
+            self._static_fetcher._resolve_timeout_seconds(request),
+        )
         document = Selector(html, url=final_url)
         return FetchResponse(
             url=request.url,

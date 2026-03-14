@@ -76,6 +76,30 @@ def test_static_fetcher_retries_before_success() -> None:
     assert transport.calls == 2
 
 
+def test_static_fetcher_stops_on_non_retryable_error() -> None:
+    transport = FakeTransport(
+        [
+            FetchError("not found", status_code=404, retryable=False),
+            (
+                200,
+                "<html><body>ok</body></html>",
+                {},
+                "https://example.com/page",
+            ),
+        ]
+    )
+    fetcher = StaticHtmlFetcher(transport=transport, retries=2)
+
+    try:
+        fetcher.fetch(FetchRequest(url="https://example.com/page"))
+    except FetchError as exc:
+        assert exc.status_code == 404
+    else:
+        raise AssertionError("Expected FetchError for non-retryable failure")
+
+    assert transport.calls == 1
+
+
 def test_fetch_orchestrator_uses_dynamic_on_failure() -> None:
     transport = FakeTransport([FetchError("boom")])
     static_fetcher = StaticHtmlFetcher(transport=transport, retries=0)
@@ -146,3 +170,40 @@ def test_static_fetcher_applies_domain_interval() -> None:
     fetcher.fetch(FetchRequest(url="https://example.com/2"))
 
     assert sleeps == [0.5]
+
+
+def test_static_fetcher_applies_retry_backoff_and_default_request_settings() -> None:
+    transport = FakeTransport(
+        [
+            FetchError("temporary"),
+            (
+                200,
+                "<html><body>ok</body></html>",
+                {},
+                "https://example.com/page",
+            ),
+        ]
+    )
+    sleeps: list[float] = []
+    seen_requests: list[tuple[float, dict[str, str]]] = []
+
+    class TrackingTransport(FakeTransport):
+        def fetch(self, url: str, timeout_seconds: float, headers: dict[str, str]):
+            seen_requests.append((timeout_seconds, dict(headers)))
+            return super().fetch(url, timeout_seconds, headers)
+
+    fetcher = StaticHtmlFetcher(
+        transport=TrackingTransport(transport._responses),
+        retries=1,
+        retry_backoff_seconds=0.25,
+        default_timeout_seconds=7.5,
+        default_headers={"User-Agent": "svg-scrapling-test"},
+        sleeper=sleeps.append,
+    )
+
+    response = fetcher.fetch(FetchRequest(url="https://example.com/page"))
+
+    assert response.attempts == 2
+    assert sleeps == [0.25]
+    assert seen_requests[0][0] == 7.5
+    assert seen_requests[0][1]["User-Agent"] == "svg-scrapling-test"

@@ -16,6 +16,7 @@ from svg_scrapling.scraping import (
 @dataclass(frozen=True)
 class StaticFetchRuntimeSettings:
     retries: int
+    retry_backoff_seconds: float
     domain_interval_seconds: float
     limit_per_domain: int
     request_timeout_seconds: float
@@ -30,6 +31,7 @@ def static_fetch_runtime_settings_for(config: FindAssetsConfig) -> StaticFetchRu
     if config.fetch_strategy == FetchStrategy.DYNAMIC_ON_FAILURE:
         return StaticFetchRuntimeSettings(
             retries=1,
+            retry_backoff_seconds=0.4,
             domain_interval_seconds=0.4,
             limit_per_domain=2,
             request_timeout_seconds=8.0,
@@ -38,6 +40,7 @@ def static_fetch_runtime_settings_for(config: FindAssetsConfig) -> StaticFetchRu
     if config.fetch_strategy == FetchStrategy.DYNAMIC_ONLY:
         return StaticFetchRuntimeSettings(
             retries=0,
+            retry_backoff_seconds=0.0,
             domain_interval_seconds=0.4,
             limit_per_domain=2,
             request_timeout_seconds=8.0,
@@ -45,6 +48,7 @@ def static_fetch_runtime_settings_for(config: FindAssetsConfig) -> StaticFetchRu
         )
     return StaticFetchRuntimeSettings(
         retries=2,
+        retry_backoff_seconds=0.6,
         domain_interval_seconds=0.5,
         limit_per_domain=2,
         request_timeout_seconds=10.0,
@@ -61,7 +65,10 @@ def build_default_fetch_orchestrator(
     static_fetcher = StaticHtmlFetcher(
         transport=transport,
         retries=settings.retries,
+        retry_backoff_seconds=settings.retry_backoff_seconds,
         domain_interval_seconds=settings.domain_interval_seconds,
         concurrency=DomainConcurrencyController(settings.limit_per_domain),
+        default_timeout_seconds=settings.request_timeout_seconds,
+        default_headers=dict(settings.default_headers),
     )
     return FetchOrchestrator(static_fetcher=static_fetcher)

@@ -1,6 +1,7 @@
 from svg_scrapling.config import FetchStrategy, FindAssetsConfig
 from svg_scrapling.runtime import (
     build_default_fetch_orchestrator,
+    discovery_provider_runtime_settings_for,
     static_fetch_runtime_settings_for,
 )
 from svg_scrapling.scraping import FetchOrchestrator, FetchRequest
@@ -46,3 +47,11 @@ def test_build_default_fetch_orchestrator_assembles_static_runtime() -> None:
     assert isinstance(orchestrator, FetchOrchestrator)
     assert response.fetched_via == "static"
     assert transport.calls == 1
+
+
+def test_discovery_provider_runtime_settings_scale_query_budget() -> None:
+    short_run = discovery_provider_runtime_settings_for(FindAssetsConfig(query="tiger", count=5))
+    larger_run = discovery_provider_runtime_settings_for(FindAssetsConfig(query="tiger", count=25))
+
+    assert short_run.max_queries_per_search == 2
+    assert larger_run.max_queries_per_search == 3
