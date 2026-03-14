@@ -133,6 +133,52 @@ uv run assets find \
   --output ./data/runs/dynamic-demo
 ```
 
+## Library Usage
+
+Supported library entrypoints are exposed from stable package surfaces:
+
+- `svg_scrapling`
+- `svg_scrapling.config`
+- `svg_scrapling.pipeline`
+- `svg_scrapling.runtime`
+
+Example:
+
+```python
+from svg_scrapling import (
+    FetchStrategy,
+    FindAssetsConfig,
+    LicenseMode,
+    OutputFormat,
+    build_default_pipeline_dependencies,
+    run_find_assets,
+)
+
+config = FindAssetsConfig(
+    query="tiger coloring page",
+    count=5,
+    preferred_format=OutputFormat.SVG,
+    fallback_format=OutputFormat.PNG,
+    mode=LicenseMode.PROVENANCE_ONLY,
+    fetch_strategy=FetchStrategy.STATIC_FIRST,
+)
+
+result = run_find_assets(
+    config,
+    dependencies=build_default_pipeline_dependencies(config),
+)
+
+print(result.manifest_path)
+```
+
+Deep internal module imports outside those entrypoints should be treated as unstable.
+
+## Versioning
+
+- distribution version comes from `project.version` in `pyproject.toml`
+- runtime version is read from the installed package metadata
+- release tags should use the format `vX.Y.Z`
+
 ## Current Limitations
 
 - Live discovery currently uses `duckduckgo_html` and `bing_html`.
