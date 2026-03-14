@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import argparse
 
-from vtracer import convert_image_to_svg_py  # type: ignore[import-untyped]
-
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -29,6 +27,13 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    try:
+        from vtracer import convert_image_to_svg_py  # type: ignore[import-untyped]
+    except ModuleNotFoundError as err:
+        raise SystemExit(
+            "The optional 'conversion' dependency group is required for raster-to-SVG "
+            "conversion. Install svg-scrapling[conversion] to enable VTracer."
+        ) from err
     convert_image_to_svg_py(
         args.input_path,
         args.output_path,

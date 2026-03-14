@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import binascii
+import importlib.util
 import json
 import struct
 import zlib
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 import svg_scrapling.cli as cli_module
@@ -24,6 +26,7 @@ from svg_scrapling.scraping import FetchOrchestrator, StaticHtmlFetcher
 from svg_scrapling.search import CandidatePage, FakeSearchProvider
 
 runner = CliRunner()
+VTRACER_AVAILABLE = importlib.util.find_spec("vtracer") is not None
 
 
 class FixtureFetchTransport:
@@ -88,6 +91,7 @@ def _write_fixture_png() -> bytes:
     )
 
 
+@pytest.mark.skipif(not VTRACER_AVAILABLE, reason="vtracer extra is not installed")
 def test_assets_find_runs_happy_path_with_controlled_dependencies(
     tmp_path: Path,
     monkeypatch,

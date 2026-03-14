@@ -1,4 +1,5 @@
 import binascii
+import importlib.util
 import struct
 import zlib
 from pathlib import Path
@@ -19,6 +20,8 @@ from svg_scrapling.domain import (
     DownloadStatus,
 )
 from svg_scrapling.storage import create_run_layout
+
+VTRACER_AVAILABLE = importlib.util.find_spec("vtracer") is not None
 
 
 def _png_chunk(chunk_type: bytes, data: bytes) -> bytes:
@@ -116,6 +119,7 @@ def test_vtracer_converter_records_backend_failure(tmp_path: Path) -> None:
     assert converted.notes == ("backend exploded",)
 
 
+@pytest.mark.skipif(not VTRACER_AVAILABLE, reason="vtracer extra is not installed")
 def test_vtracer_converter_converts_png_fixture(tmp_path: Path) -> None:
     run_layout = create_run_layout(tmp_path / "runs", "run-1")
     original_path = run_layout.originals / "fixture.png"

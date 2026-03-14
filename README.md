@@ -31,6 +31,12 @@ Install dependencies first:
 uv sync --group dev
 ```
 
+If you want PNG-to-SVG conversion through VTracer, install the optional conversion extra:
+
+```bash
+uv sync --group dev --extra conversion
+```
+
 See the available commands:
 
 ```bash
@@ -193,6 +199,7 @@ Deep internal module imports outside those entrypoints should be treated as unst
 - Dynamic fetching still fails loudly when no Lightpanda-compatible client is configured.
 - License handling stays conservative: `licensed_only` requires an explicit allowlist and `provenance_only` preserves uncertain cases rather than silently allowing reuse.
 - The VTracer conversion backend is currently supported on Python `>=3.10,<3.14`.
+- Raster-to-SVG conversion is optional and requires installing the `conversion` extra.
 
 ## Current Runtime Note
 

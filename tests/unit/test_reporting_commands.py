@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import binascii
+import importlib.util
 import struct
 import zlib
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from svg_scrapling.cli import app
@@ -19,6 +21,7 @@ from svg_scrapling.manifests import ManifestWriter, build_manifest_record
 from svg_scrapling.storage import create_run_layout
 
 runner = CliRunner()
+VTRACER_AVAILABLE = importlib.util.find_spec("vtracer") is not None
 
 
 def _png_chunk(chunk_type: bytes, data: bytes) -> bytes:
@@ -137,6 +140,7 @@ def test_dedupe_rewrites_manifest_with_unique_records(tmp_path: Path) -> None:
     assert "removed 1 duplicates" in result.stdout
 
 
+@pytest.mark.skipif(not VTRACER_AVAILABLE, reason="vtracer extra is not installed")
 def test_convert_manifest_generates_svg_derivatives(tmp_path: Path) -> None:
     manifest_path = _manifest_path(tmp_path)
 
