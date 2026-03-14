@@ -14,4 +14,10 @@ uv run mypy src apps
 uv run pytest
 ```
 
-The initial scaffold is tracked in GitHub issue `#3`.
+## Current Runtime Note
+
+The VTracer conversion backend is currently supported on Python `>=3.10,<3.14`. The Python `3.14` compatibility follow-up is tracked in GitHub issue `#20`.
+
+## Developer Workflow
+
+Repository workflow, validation expectations, and run output conventions are documented in [docs/developer-workflow.md](docs/developer-workflow.md).

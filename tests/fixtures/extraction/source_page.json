@@ -1,0 +1,14 @@
+{
+  "source_page_url": "https://example.com/page",
+  "query": "tiger coloring page",
+  "domain": "example.com",
+  "title": "Tiger page",
+  "extracted_assets": [
+    {
+      "asset_url": "https://example.com/assets/tiger.svg",
+      "original_format": "svg",
+      "style_tags": ["outline"],
+      "notes": ["fixture"]
+    }
+  ]
+}

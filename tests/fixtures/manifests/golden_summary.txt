@@ -1,0 +1,13 @@
+run_id: run-fixture
+query: tiger coloring page
+total_discovered: 1
+total_downloaded: 1
+total_accepted: 1
+total_rejected: 0
+total_converted: 0
+totals_by_format: {'png': 1}
+totals_by_domain: {'assets.example.com': 1}
+totals_by_reuse_status: {'unknown': 1}
+rejection_reasons: {}
+conversion_failures: {}
+duplicate_counts: {}

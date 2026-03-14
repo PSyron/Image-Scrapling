@@ -1,0 +1,20 @@
+[
+  {
+    "url": "https://example.com/tigers",
+    "query": "tiger coloring page",
+    "provider_name": "fixture-provider",
+    "rank": 2,
+    "title": "Tiger coloring pages",
+    "snippet": "Printable tiger outlines.",
+    "domain": "example.com"
+  },
+  {
+    "url": "https://example.com/lions",
+    "query": "lion coloring page",
+    "provider_name": "fixture-provider",
+    "rank": 1,
+    "title": "Lion coloring pages",
+    "snippet": "Printable lion outlines.",
+    "domain": "example.com"
+  }
+]
