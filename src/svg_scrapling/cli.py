@@ -20,6 +20,7 @@ from svg_scrapling.domain import (
     SearchQuery,
 )
 from svg_scrapling.manifests import ManifestWriter, load_manifest_records
+from svg_scrapling.pipeline import PipelineDependencies, PipelineStageError, run_find_assets
 from svg_scrapling.quality import HeuristicQualityScorer
 from svg_scrapling.ranking import CandidateDeduper
 from svg_scrapling.reporting import (
@@ -135,6 +136,13 @@ def _single_asset_layout(asset_path: Path) -> RunLayout:
     )
 
 
+def _build_pipeline_dependencies(_config: FindAssetsConfig) -> PipelineDependencies:
+    raise RuntimeError(
+        "No pipeline dependencies are configured for `assets find` yet. "
+        "Use a controlled dependency-injected flow for now."
+    )
+
+
 def _version_callback(value: bool) -> None:
     if value:
         typer.echo(f"assets {__version__}")
@@ -228,7 +236,25 @@ def find_assets(
         f"preferred_format={config.preferred_format.value}, mode={config.mode.value}.",
         err=True,
     )
-    raise _not_implemented("find")
+    try:
+        result = run_find_assets(
+            config,
+            dependencies=_build_pipeline_dependencies(config),
+        )
+    except RuntimeError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from exc
+    except PipelineStageError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from exc
+
+    typer.echo(
+        "Find pipeline completed: "
+        f"run_id={result.run_layout.run_id}, "
+        f"manifest={result.manifest_path}, "
+        f"summary={result.summary_path}",
+        err=True,
+    )
 
 
 @app.command("inspect-manifest")
