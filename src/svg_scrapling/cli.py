@@ -10,7 +10,13 @@ from typing import Annotated
 import typer
 
 from svg_scrapling import __version__
-from svg_scrapling.config import FetchStrategy, FindAssetsConfig, LicenseMode, OutputFormat
+from svg_scrapling.config import (
+    DiscoveryProvider,
+    FetchStrategy,
+    FindAssetsConfig,
+    LicenseMode,
+    OutputFormat,
+)
 from svg_scrapling.conversion import ConversionPreset, VTracerConverter
 from svg_scrapling.domain import (
     AssetFormat,
@@ -60,7 +66,11 @@ def _build_find_models(
     mode: LicenseMode,
     allowed_licenses: str | None,
     fetch_strategy: FetchStrategy,
+    provider: DiscoveryProvider,
+    disabled_providers: tuple[DiscoveryProvider, ...],
     output: Path,
+    run_id: str | None,
+    skip_existing_downloads: bool,
 ) -> tuple[FindAssetsConfig, SearchQuery]:
     try:
         config = FindAssetsConfig(
@@ -72,7 +82,11 @@ def _build_find_models(
             mode=mode,
             allowed_licenses=_parse_allowed_licenses(allowed_licenses),
             fetch_strategy=fetch_strategy,
+            provider=provider,
+            disabled_providers=frozenset(disabled_providers),
             output_root=output,
+            run_id=run_id,
+            skip_existing_downloads=skip_existing_downloads,
         )
         search_query = SearchQuery(
             query=config.query,
@@ -206,6 +220,17 @@ def find_assets(
         FetchStrategy,
         typer.Option("--fetch-strategy", help="Fetch escalation strategy."),
     ] = FetchStrategy.STATIC_FIRST,
+    provider: Annotated[
+        DiscoveryProvider,
+        typer.Option("--provider", help="Discovery provider to use for candidate pages."),
+    ] = DiscoveryProvider.DUCKDUCKGO_HTML,
+    disabled_providers: Annotated[
+        list[DiscoveryProvider] | None,
+        typer.Option(
+            "--disable-provider",
+            help="Provider to disable explicitly for this run. May be repeated.",
+        ),
+    ] = None,
     output: Annotated[
         Path,
         typer.Option(
@@ -216,6 +241,17 @@ def find_assets(
             resolve_path=False,
         ),
     ] = Path("data/runs"),
+    run_id: Annotated[
+        str | None,
+        typer.Option("--run-id", help="Optional stable run identifier used for resume."),
+    ] = None,
+    skip_existing_downloads: Annotated[
+        bool,
+        typer.Option(
+            "--skip-existing-downloads/--no-skip-existing-downloads",
+            help="Reuse already-downloaded assets when their deterministic output path exists.",
+        ),
+    ] = True,
 ) -> None:
     config, search_query = _build_find_models(
         query=query,
@@ -226,7 +262,11 @@ def find_assets(
         mode=mode,
         allowed_licenses=allowed_licenses,
         fetch_strategy=fetch_strategy,
+        provider=provider,
+        disabled_providers=tuple(disabled_providers or ()),
         output=output,
+        run_id=run_id,
+        skip_existing_downloads=skip_existing_downloads,
     )
     typer.echo(
         "Validated find request: "
@@ -250,7 +290,11 @@ def find_assets(
         "Find pipeline completed: "
         f"run_id={result.run_layout.run_id}, "
         f"manifest={result.manifest_path}, "
-        f"summary={result.summary_path}",
+        f"summary={result.summary_path}, "
+        f"downloaded={result.summary.total_downloaded}, "
+        f"rejected={result.summary.total_rejected}, "
+        f"fetch_failures={result.summary.total_fetch_failures}, "
+        f"rejected_report={result.rejected_report_path}",
         err=True,
     )
 

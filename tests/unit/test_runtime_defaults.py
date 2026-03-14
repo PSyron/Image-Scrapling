@@ -1,6 +1,5 @@
 from svg_scrapling.config import FindAssetsConfig
 from svg_scrapling.runtime import (
-    RuntimeCompositionError,
     RuntimeFactories,
     build_default_pipeline_dependencies,
     default_runtime_factories,
@@ -16,18 +15,16 @@ class FakeFetchTransport:
         return 200, "<html><body>ok</body></html>", {}, url
 
 
-def test_default_runtime_factories_fail_with_explicit_provider_guidance() -> None:
+def test_default_runtime_factories_include_live_provider_and_fetch_defaults() -> None:
     config = FindAssetsConfig(query="tiger coloring page")
 
-    try:
-        build_default_pipeline_dependencies(
-            config,
-            factories=default_runtime_factories(),
-        )
-    except RuntimeCompositionError as exc:
-        assert "No default discovery provider is configured yet" in str(exc)
-    else:
-        raise AssertionError("Expected RuntimeCompositionError for missing default provider")
+    dependencies = build_default_pipeline_dependencies(
+        config,
+        factories=default_runtime_factories(),
+    )
+
+    assert dependencies.search_provider.name == "duckduckgo_html"
+    assert dependencies.fetch_orchestrator is not None
 
 
 def test_default_runtime_builder_accepts_test_factories() -> None:

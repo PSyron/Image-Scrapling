@@ -5,6 +5,11 @@ total_downloaded: 1
 total_accepted: 1
 total_rejected: 0
 total_converted: 0
+total_candidate_pages: 0
+total_extracted_candidates: 0
+total_rejected_candidates: 0
+total_fetch_failures: 0
+total_reused_existing: 0
 totals_by_format: {'png': 1}
 totals_by_domain: {'assets.example.com': 1}
 totals_by_reuse_status: {'unknown': 1}

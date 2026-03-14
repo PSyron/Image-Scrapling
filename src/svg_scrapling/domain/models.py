@@ -241,6 +241,11 @@ class PipelineRunSummary(SerializableModel):
     total_accepted: int
     total_rejected: int
     total_converted: int
+    total_candidate_pages: int = 0
+    total_extracted_candidates: int = 0
+    total_rejected_candidates: int = 0
+    total_fetch_failures: int = 0
+    total_reused_existing: int = 0
     totals_by_format: dict[str, int] = field(default_factory=dict)
     totals_by_domain: dict[str, int] = field(default_factory=dict)
     totals_by_reuse_status: dict[str, int] = field(default_factory=dict)
@@ -259,6 +264,11 @@ class PipelineRunSummary(SerializableModel):
             "total_accepted",
             "total_rejected",
             "total_converted",
+            "total_candidate_pages",
+            "total_extracted_candidates",
+            "total_rejected_candidates",
+            "total_fetch_failures",
+            "total_reused_existing",
         ):
             if getattr(self, field_name) < 0:
                 raise ValueError(f"{field_name} must not be negative")

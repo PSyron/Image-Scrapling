@@ -2,7 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from svg_scrapling.config import FetchStrategy, FindAssetsConfig, LicenseMode, OutputFormat
+from svg_scrapling.config import (
+    DiscoveryProvider,
+    FetchStrategy,
+    FindAssetsConfig,
+    LicenseMode,
+    OutputFormat,
+)
 
 
 def test_find_assets_config_normalizes_values() -> None:
@@ -38,3 +44,12 @@ def test_find_assets_config_rejects_unknown_licenses() -> None:
 def test_find_assets_config_requires_allowlist_for_licensed_only() -> None:
     with pytest.raises(ValueError, match="allowed_licenses must be provided"):
         FindAssetsConfig(query="cats", mode=LicenseMode.LICENSED_ONLY)
+
+
+def test_find_assets_config_rejects_disabled_selected_provider() -> None:
+    with pytest.raises(ValueError, match="cannot be selected and disabled"):
+        FindAssetsConfig(
+            query="cats",
+            provider=DiscoveryProvider.DUCKDUCKGO_HTML,
+            disabled_providers=frozenset({DiscoveryProvider.DUCKDUCKGO_HTML}),
+        )

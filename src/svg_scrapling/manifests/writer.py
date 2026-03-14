@@ -116,7 +116,11 @@ def build_run_summary(
         if record.conversion_status == ConversionStatus.FAILED:
             conversion_failures[record.id] = conversion_failures.get(record.id, 0) + 1
 
-    total_rejected = sum(1 for record in records if record.download_status == DownloadStatus.FAILED)
+    total_rejected = sum(
+        1
+        for record in records
+        if record.download_status in {DownloadStatus.FAILED, DownloadStatus.SKIPPED}
+    )
     total_accepted = len(records) - total_rejected
 
     return PipelineRunSummary(

@@ -51,6 +51,7 @@ class UrlopenDownloadTransport:
 @dataclass
 class AssetDownloader:
     transport: DownloadTransport | None = None
+    skip_existing: bool = True
 
     def __post_init__(self) -> None:
         if self.transport is None:
@@ -58,6 +59,15 @@ class AssetDownloader:
 
     def download(self, candidate: AssetCandidate, run_layout: RunLayout) -> DownloadedAsset:
         output_path = build_original_asset_path(run_layout, candidate)
+        if self.skip_existing and output_path.exists():
+            return DownloadedAsset(
+                asset_id=candidate.id,
+                source_page_url=candidate.source_page_url,
+                asset_url=candidate.asset_url,
+                original_format=candidate.original_format,
+                stored_original_path=output_path,
+                download_status=DownloadStatus.DOWNLOADED,
+            )
         transport = self.transport
         assert transport is not None
         payload = transport.download(candidate.asset_url)

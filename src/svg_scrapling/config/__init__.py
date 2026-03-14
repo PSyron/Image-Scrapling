@@ -1,6 +1,7 @@
 """Configuration models and policy resolution."""
 
 from svg_scrapling.config.models import (
+    DiscoveryProvider,
     FetchStrategy,
     FindAssetsConfig,
     LicenseMode,
@@ -8,6 +9,7 @@ from svg_scrapling.config.models import (
 )
 
 __all__ = [
+    "DiscoveryProvider",
     "FetchStrategy",
     "FindAssetsConfig",
     "LicenseMode",

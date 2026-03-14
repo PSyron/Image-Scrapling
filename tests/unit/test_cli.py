@@ -1,5 +1,6 @@
 from typer.testing import CliRunner
 
+import svg_scrapling.cli as cli_module
 from svg_scrapling.cli import app
 
 runner = CliRunner()
@@ -14,7 +15,13 @@ def test_root_help_lists_commands() -> None:
     assert "export-report" in result.stdout
 
 
-def test_find_validates_known_options_before_placeholder_exit() -> None:
+def test_find_validates_known_options_before_runtime_exit(monkeypatch) -> None:
+    monkeypatch.setattr(
+        cli_module,
+        "_build_pipeline_dependencies",
+        lambda _config: (_ for _ in ()).throw(RuntimeError("runtime unavailable")),
+    )
+
     result = runner.invoke(
         app,
         [
@@ -34,7 +41,25 @@ def test_find_validates_known_options_before_placeholder_exit() -> None:
 
     assert result.exit_code == 1
     assert "Validated find request" in result.stderr
-    assert "No default discovery provider is configured yet" in result.stderr
+    assert "runtime unavailable" in result.stderr
+
+
+def test_find_rejects_selected_disabled_provider_combination() -> None:
+    result = runner.invoke(
+        app,
+        [
+            "find",
+            "--query",
+            "tiger coloring page",
+            "--provider",
+            "duckduckgo_html",
+            "--disable-provider",
+            "duckduckgo_html",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "cannot be selected and disabled" in result.output
 
 
 def test_find_rejects_invalid_license_combination() -> None:

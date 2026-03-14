@@ -42,6 +42,10 @@ class FetchStrategy(_StringEnum):
     DYNAMIC_ONLY = "dynamic_only"
 
 
+class DiscoveryProvider(_StringEnum):
+    DUCKDUCKGO_HTML = "duckduckgo_html"
+
+
 @dataclass(frozen=True)
 class FindAssetsConfig:
     """Core config shared by CLI parsing and pipeline orchestration."""
@@ -54,7 +58,11 @@ class FindAssetsConfig:
     mode: LicenseMode = LicenseMode.PROVENANCE_ONLY
     allowed_licenses: frozenset[str] = field(default_factory=frozenset)
     fetch_strategy: FetchStrategy = FetchStrategy.STATIC_FIRST
+    provider: DiscoveryProvider = DiscoveryProvider.DUCKDUCKGO_HTML
+    disabled_providers: frozenset[DiscoveryProvider] = field(default_factory=frozenset)
     output_root: Path = Path("data/runs")
+    run_id: str | None = None
+    skip_existing_downloads: bool = True
 
     def __post_init__(self) -> None:
         normalized_query = self.query.strip()
@@ -66,6 +74,11 @@ class FindAssetsConfig:
         normalized_output_root = self.output_root.expanduser()
         object.__setattr__(self, "query", normalized_query)
         object.__setattr__(self, "output_root", normalized_output_root)
+
+        normalized_run_id = self.run_id.strip() if self.run_id is not None else None
+        if normalized_run_id == "":
+            raise ValueError("run_id must not be blank")
+        object.__setattr__(self, "run_id", normalized_run_id)
 
         normalized_licenses = frozenset(label.strip().lower() for label in self.allowed_licenses)
         if "" in normalized_licenses:
@@ -83,4 +96,11 @@ class FindAssetsConfig:
         if self.mode == LicenseMode.LICENSED_ONLY and not normalized_licenses:
             raise ValueError("allowed_licenses must be provided when mode is licensed_only")
 
+        normalized_disabled_providers = frozenset(self.disabled_providers)
+        if self.provider in normalized_disabled_providers:
+            raise ValueError(
+                f"provider {self.provider.value} cannot be selected and disabled at the same time"
+            )
+
         object.__setattr__(self, "allowed_licenses", normalized_licenses)
+        object.__setattr__(self, "disabled_providers", normalized_disabled_providers)
