@@ -18,6 +18,8 @@ uv run pytest
 
 The VTracer conversion backend is currently supported on Python `>=3.10,<3.14`. The Python `3.14` compatibility follow-up is tracked in GitHub issue `#20`.
 
+Reproduction details for the current Python `3.14` blocker live in [docs/vtracer-python-314.md](docs/vtracer-python-314.md).
+
 ## Developer Workflow
 
 Repository workflow, validation expectations, and run output conventions are documented in [docs/developer-workflow.md](docs/developer-workflow.md).

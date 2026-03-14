@@ -3,8 +3,8 @@
 from svg_scrapling.conversion.svg_cleanup import (
     SvgCleanupError,
     SvgCleanupResult,
-    SvgPostProcessor,
     SvgoCommandOptimizer,
+    SvgPostProcessor,
 )
 from svg_scrapling.conversion.vtracer_backend import (
     ConversionPreset,
