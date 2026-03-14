@@ -49,6 +49,24 @@ uv run pytest
 
 Use targeted commands while implementing an issue, then rerun the full set before pushing to `main`.
 
+## Release Security
+
+Public package releases are intended to use a guarded `workflow_dispatch` flow instead of releasing on normal pushes.
+
+Operational rules:
+
+- start releases from `main` only
+- keep release approval behind the GitHub `release` environment
+- do not store long-lived publish tokens in the repository
+- prefer PyPI Trusted Publisher / OIDC over API tokens when the public release path is enabled
+- keep local credential files such as `.env`, `.pypirc`, `.netrc`, `.npmrc`, and `pip.conf` out of the repository
+
+If local or CI credentials are ever needed for testing alternate registries, store them in:
+
+- GitHub environment secrets
+- CI secret storage
+- local user-level config outside the repository root
+
 ## Run Output Layout
 
 Run artifacts live under `data/runs/<run-id>/` or another explicitly chosen output root.

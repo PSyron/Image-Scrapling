@@ -4,11 +4,18 @@
 .pytest_cache/
 .ruff_cache/
 .venv/
+.env
+.env.*
+.netrc
+.npmrc
+.pypirc
 __pycache__/
 build/
 dist/
 *.egg-info/
 *.log
+pip.conf
+pip.ini
 
 # Runtime outputs
 data/runs/
@@ -17,4 +24,3 @@ data/runs/
 manifest.csv
 manifest.jsonl
 summary.md
-
