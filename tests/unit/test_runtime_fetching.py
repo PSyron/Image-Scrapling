@@ -1,3 +1,4 @@
+from svg_scrapling.browser import lightpanda_env_key
 from svg_scrapling.config import FetchStrategy, FindAssetsConfig
 from svg_scrapling.runtime import (
     build_default_fetch_orchestrator,
@@ -47,6 +48,18 @@ def test_build_default_fetch_orchestrator_assembles_static_runtime() -> None:
     assert isinstance(orchestrator, FetchOrchestrator)
     assert response.fetched_via == "static"
     assert transport.calls == 1
+
+
+def test_build_default_fetch_orchestrator_wires_dynamic_client_from_environment(
+    monkeypatch,
+) -> None:
+    config = FindAssetsConfig(query="tiger", fetch_strategy=FetchStrategy.DYNAMIC_ONLY)
+    transport = FakeTransport()
+    monkeypatch.setenv(lightpanda_env_key(), "/bin/echo")
+
+    orchestrator = build_default_fetch_orchestrator(config, transport=transport)
+
+    assert orchestrator._dynamic_client.is_available() is True
 
 
 def test_discovery_provider_runtime_settings_scale_query_budget() -> None:

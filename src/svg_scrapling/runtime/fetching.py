@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from svg_scrapling.browser import build_lightpanda_command_client
 from svg_scrapling.config import FetchStrategy, FindAssetsConfig
 from svg_scrapling.scraping import (
     DomainConcurrencyController,
@@ -71,4 +72,5 @@ def build_default_fetch_orchestrator(
         default_timeout_seconds=settings.request_timeout_seconds,
         default_headers=dict(settings.default_headers),
     )
-    return FetchOrchestrator(static_fetcher=static_fetcher)
+    dynamic_client = build_lightpanda_command_client()
+    return FetchOrchestrator(static_fetcher=static_fetcher, dynamic_client=dynamic_client)
