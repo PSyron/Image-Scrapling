@@ -7,12 +7,13 @@ name = "svg-scrapling"
 version = "0.1.0"
 description = "CLI-first pipeline for discovering and cataloging coloring-style SVG and PNG assets."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "Proprietary" }
 authors = [
   { name = "SVG Scrapling Maintainers" },
 ]
 dependencies = [
+  "scrapling>=0.4.2",
   "typer>=0.16.0",
 ]
 
@@ -36,7 +37,7 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 src = ["src", "apps", "tests"]
-target-version = "py39"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = ["B", "E", "F", "I", "SIM", "UP"]
@@ -46,7 +47,7 @@ quote-style = "double"
 indent-style = "space"
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 strict = true
 files = ["src", "apps"]
 explicit_package_bases = true
