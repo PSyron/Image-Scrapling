@@ -7,7 +7,7 @@ name = "svg-scrapling"
 version = "0.1.0"
 description = "CLI-first pipeline for discovering and cataloging coloring-style SVG and PNG assets."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.14"
 license = { text = "Proprietary" }
 authors = [
   { name = "SVG Scrapling Maintainers" },
@@ -15,6 +15,7 @@ authors = [
 dependencies = [
   "scrapling>=0.4.2",
   "typer>=0.16.0",
+  "vtracer>=0.6.12",
 ]
 
 [project.scripts]
