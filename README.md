@@ -1,6 +1,13 @@
-# SVG Scrapling
+# Image-Scrapling
 
-Repository for discovering, evaluating, converting, and cataloging coloring-style image assets.
+Public repository for discovering, evaluating, converting, and cataloging coloring-style image assets.
+
+Repository name:
+- `Image-Scrapling`
+
+Published package and import names:
+- package: `svg-scrapling`
+- import: `svg_scrapling`
 
 ## Bootstrap
 

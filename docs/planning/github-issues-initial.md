@@ -1,6 +1,6 @@
-# SVG Scrapling Initial GitHub Issue Drafts
+# Image-Scrapling Initial GitHub Issue Drafts
 
-This file proposes the first issue set for `SVG Scrapling`. The goal is to turn the product README into small, dependency-ordered, implementation-ready issues that can be completed and committed directly on `main`.
+This file proposes the first issue set for `Image-Scrapling`. The goal is to turn the product README into small, dependency-ordered, implementation-ready issues that can be completed and committed directly on `main`.
 
 Suggested issue format:
 

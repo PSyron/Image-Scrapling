@@ -2,7 +2,13 @@
 
 ## Overview
 
-This repository is `SVG Scrapling`, a Python project for discovering, collecting, evaluating, converting, and cataloging coloring-style image assets with strong provenance and explicit licensing behavior.
+This repository is `Image-Scrapling`, a Python project for discovering, collecting, evaluating, converting, and cataloging coloring-style image assets with strong provenance and explicit licensing behavior.
+
+Repository and package naming:
+
+- Repository name: `Image-Scrapling`
+- Published package name: `svg-scrapling`
+- Python import package: `svg_scrapling`
 
 The repository is currently in planning/bootstrap stage. Until implementation lands, this file defines the intended operating model and the target repository layout that new work must follow.
 

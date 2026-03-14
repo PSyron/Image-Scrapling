@@ -1,8 +1,8 @@
-# SVG Scrapling Project Plan
+# Image-Scrapling Project Plan
 
 ## Project Summary
 
-`SVG Scrapling` is a Python CLI system that discovers coloring-style assets on the web, prefers SVG when possible, falls back to PNG when explicitly allowed, optionally converts raster assets to SVG, and writes provenance-rich manifests suitable for downstream review or ingestion.
+`Image-Scrapling` is a Python CLI system that discovers coloring-style assets on the web, prefers SVG when possible, falls back to PNG when explicitly allowed, optionally converts raster assets to SVG, and writes provenance-rich manifests suitable for downstream review or ingestion.
 
 The system is intended to be:
 

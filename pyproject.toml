@@ -40,9 +40,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/PSyron/svg_scrapling"
-Repository = "https://github.com/PSyron/svg_scrapling"
-Issues = "https://github.com/PSyron/svg_scrapling/issues"
+Homepage = "https://github.com/PSyron/Image-Scrapling"
+Repository = "https://github.com/PSyron/Image-Scrapling"
+Issues = "https://github.com/PSyron/Image-Scrapling/issues"
 
 [project.scripts]
 assets = "svg_scrapling.__main__:main"
