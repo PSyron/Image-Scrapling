@@ -31,6 +31,7 @@ from svg_scrapling.reporting import (
     manifest_record_to_candidate,
     render_summary_text,
 )
+from svg_scrapling.runtime import RuntimeFactories, build_pipeline_dependencies
 from svg_scrapling.storage import RunLayout
 
 app = typer.Typer(
@@ -137,9 +138,9 @@ def _single_asset_layout(asset_path: Path) -> RunLayout:
 
 
 def _build_pipeline_dependencies(_config: FindAssetsConfig) -> PipelineDependencies:
-    raise RuntimeError(
-        "No pipeline dependencies are configured for `assets find` yet. "
-        "Use a controlled dependency-injected flow for now."
+    return build_pipeline_dependencies(
+        _config,
+        factories=RuntimeFactories(),
     )
 
 

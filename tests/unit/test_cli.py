@@ -34,7 +34,7 @@ def test_find_validates_known_options_before_placeholder_exit() -> None:
 
     assert result.exit_code == 1
     assert "Validated find request" in result.stderr
-    assert "No pipeline dependencies are configured" in result.stderr
+    assert "Runtime composition is incomplete" in result.stderr
 
 
 def test_find_rejects_invalid_license_combination() -> None:
