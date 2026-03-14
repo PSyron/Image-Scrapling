@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import importlib
+from collections.abc import Callable
+from typing import Any, cast
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -28,12 +31,13 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        from vtracer import convert_image_to_svg_py  # type: ignore[import-untyped]
+        module = importlib.import_module("vtracer")
     except ModuleNotFoundError as err:
         raise SystemExit(
             "The optional 'conversion' dependency group is required for raster-to-SVG "
             "conversion. Install svg-scrapling[conversion] to enable VTracer."
         ) from err
+    convert_image_to_svg_py = cast(Callable[..., Any], module.convert_image_to_svg_py)
     convert_image_to_svg_py(
         args.input_path,
         args.output_path,
