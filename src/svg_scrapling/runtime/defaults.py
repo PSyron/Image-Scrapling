@@ -9,6 +9,7 @@ from svg_scrapling.runtime.composition import (
     RuntimeFactories,
     build_pipeline_dependencies,
 )
+from svg_scrapling.runtime.fetching import build_default_fetch_orchestrator
 from svg_scrapling.scraping import FetchOrchestrator
 from svg_scrapling.search import SearchProvider
 
@@ -21,10 +22,7 @@ def _default_provider_factory(_config: FindAssetsConfig) -> SearchProvider:
 
 
 def _default_fetch_orchestrator_factory(_config: FindAssetsConfig) -> FetchOrchestrator:
-    raise RuntimeCompositionError(
-        "No default fetch runtime is configured yet. "
-        "Implement the production static-first fetch assembly before using the default CLI runtime."
-    )
+    return build_default_fetch_orchestrator(_config)
 
 
 def default_runtime_factories() -> RuntimeFactories:
