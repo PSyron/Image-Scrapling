@@ -186,6 +186,8 @@ class QualityAssessment(SerializableModel):
     is_black_and_white_like: bool
     is_kids_friendly_candidate: bool
     dedupe_hash: str | None = None
+    component_scores: dict[str, float] = field(default_factory=dict)
+    rejection_reasons: tuple[str, ...] = ()
     notes: tuple[str, ...] = ()
 
 

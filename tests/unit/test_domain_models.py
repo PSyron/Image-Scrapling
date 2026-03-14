@@ -168,5 +168,7 @@ def test_quality_assessment_serializes_cleanly() -> None:
         "is_black_and_white_like": True,
         "is_kids_friendly_candidate": True,
         "dedupe_hash": "hash-1",
+        "component_scores": {},
+        "rejection_reasons": [],
         "notes": ["high confidence"],
     }
