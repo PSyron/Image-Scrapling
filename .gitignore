@@ -1,0 +1,20 @@
+.DS_Store
+.coverage
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.venv/
+__pycache__/
+build/
+dist/
+*.egg-info/
+*.log
+
+# Runtime outputs
+data/runs/
+
+# Generated artifacts
+manifest.csv
+manifest.jsonl
+summary.md
+

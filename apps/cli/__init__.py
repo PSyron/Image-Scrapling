@@ -1,0 +1,1 @@
+"""CLI-facing application package."""

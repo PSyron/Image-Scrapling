@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "svg-scrapling"
+version = "0.1.0"
+description = "CLI-first pipeline for discovering and cataloging coloring-style SVG and PNG assets."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Proprietary" }
+authors = [
+  { name = "SVG Scrapling Maintainers" },
+]
+dependencies = []
+
+[project.scripts]
+assets = "svg_scrapling.__main__:main"
+
+[dependency-groups]
+dev = [
+  "mypy>=1.15.0",
+  "pytest>=8.3.0",
+  "ruff>=0.11.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/svg_scrapling"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "apps", "tests"]
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "SIM", "UP"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+files = ["src", "apps"]
+explicit_package_bases = true
+mypy_path = ["src", "apps"]
+
