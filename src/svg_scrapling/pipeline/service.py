@@ -23,7 +23,7 @@ from svg_scrapling.domain import (
     ManifestRecord,
     PipelineRunSummary,
 )
-from svg_scrapling.download import AssetDownloader
+from svg_scrapling.download import AssetDownloader, BlockedAssetDownloadError
 from svg_scrapling.extraction import HtmlExtractionInput, HtmlHeuristicExtractor
 from svg_scrapling.licensing import LicensingPolicyEngine, assess_candidate_license
 from svg_scrapling.manifests import ManifestWriter, load_manifest_records
@@ -182,16 +182,22 @@ def run_find_assets(
                 try:
                     downloaded_asset = dependencies.downloader.download(candidate, run_layout)
                 except Exception as exc:  # noqa: BLE001
+                    rejection_kind = (
+                        "download_blocked"
+                        if isinstance(exc, BlockedAssetDownloadError)
+                        else "download_failed"
+                    )
                     rejected_events.append(
                         {
-                            "kind": "download_failed",
+                            "kind": rejection_kind,
                             "query": candidate.query,
                             "source_page_url": candidate.source_page_url,
                             "asset_url": candidate.asset_url,
                             "reason": str(exc),
                         }
                     )
-                    record_notes.append(f"rejection:download_failed:{type(exc).__name__}")
+                    record_notes.append(f"rejection:{rejection_kind}")
+                    record_notes.append(f"rejection:{rejection_kind}:{type(exc).__name__}")
                     failed_record = build_manifest_record(
                         candidate,
                         downloaded_asset=None,

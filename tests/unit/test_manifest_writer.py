@@ -9,8 +9,9 @@ from svg_scrapling.storage import create_run_layout
 
 
 class FakeDownloadTransport:
-    def download(self, url: str) -> bytes:
+    def download(self, url: str, *, headers: dict[str, str]) -> bytes:
         _ = url
+        _ = headers
         return b"<svg></svg>"
 
 

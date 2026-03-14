@@ -13,7 +13,7 @@ import svg_scrapling.runtime.defaults as runtime_defaults_module
 from svg_scrapling.cli import app
 from svg_scrapling.config import FetchStrategy
 from svg_scrapling.conversion import SvgPostProcessor, VTracerConverter
-from svg_scrapling.download import AssetDownloader
+from svg_scrapling.download import AssetDownloader, BlockedAssetDownloadError
 from svg_scrapling.extraction import HtmlHeuristicExtractor
 from svg_scrapling.licensing import LicensingPolicyEngine
 from svg_scrapling.pipeline import PipelineDependencies
@@ -41,9 +41,21 @@ class FixtureDownloadTransport:
         self.payloads = payloads
         self.calls = 0
 
-    def download(self, url: str) -> bytes:
+    def download(self, url: str, *, headers: dict[str, str]) -> bytes:
+        _ = headers
         self.calls += 1
         return self.payloads[url]
+
+
+class BlockingDownloadTransport:
+    def __init__(self):
+        self.calls = 0
+
+    def download(self, url: str, *, headers: dict[str, str]) -> bytes:
+        _ = url
+        _ = headers
+        self.calls += 1
+        raise BlockedAssetDownloadError("Blocked by host with HTTP 403")
 
 
 def _write_fixture_png() -> bytes:
@@ -322,3 +334,77 @@ def test_assets_find_resumes_existing_run_without_duplicate_downloads(
 
     assert len(manifest_lines) == 1
     assert '"total_reused_existing": 1' in summary_path.read_text(encoding="utf-8")
+
+
+def test_assets_find_reports_blocked_downloads_with_explicit_classification(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    html = """
+    <html>
+      <body>
+        <figure>
+          <img src="https://assets.example.com/tiger-outline.png" alt="Tiger outline printable" />
+          <figcaption>Public domain tiger coloring page</figcaption>
+        </figure>
+      </body>
+    </html>
+    """
+
+    monkeypatch.setattr(
+        cli_module,
+        "_build_pipeline_dependencies",
+        lambda _config: PipelineDependencies(
+            search_provider=FakeSearchProvider(
+                name="fixture-provider",
+                pages=(
+                    CandidatePage(
+                        url="https://example.com/tiger-page",
+                        query="tiger coloring page",
+                        provider_name="fixture-provider",
+                        rank=1,
+                    ),
+                ),
+            ),
+            fetch_orchestrator=FetchOrchestrator(
+                static_fetcher=StaticHtmlFetcher(transport=FixtureFetchTransport(html), retries=0)
+            ),
+            extractor=HtmlHeuristicExtractor(),
+            quality_scorer=HeuristicQualityScorer(),
+            deduper=CandidateDeduper(),
+            licensing_engine=LicensingPolicyEngine(),
+            downloader=AssetDownloader(transport=BlockingDownloadTransport()),
+            converter=VTracerConverter(),
+            svg_post_processor=SvgPostProcessor(),
+        ),
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "find",
+            "--query",
+            "tiger coloring page",
+            "--count",
+            "1",
+            "--preferred-format",
+            "png",
+            "--mode",
+            "licensed_only",
+            "--allowed-licenses",
+            "public_domain",
+            "--output",
+            str(tmp_path / "runs"),
+        ],
+    )
+
+    assert result.exit_code == 0
+
+    run_root = next((tmp_path / "runs").iterdir())
+    summary_path = run_root / "manifests" / "summary.json"
+    rejected_path = run_root / "manifests" / "rejected_candidates.jsonl"
+    summary_payload = json.loads(summary_path.read_text(encoding="utf-8"))
+
+    assert summary_payload["rejection_reasons"]["download_blocked"] == 1
+    assert summary_payload["rejection_reasons"]["download_blocked:BlockedAssetDownloadError"] == 1
+    assert "Blocked by host with HTTP 403" in rejected_path.read_text(encoding="utf-8")
