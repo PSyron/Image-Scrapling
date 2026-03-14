@@ -58,9 +58,7 @@ class FakeSearchProvider(SearchProvider):
     pages: tuple[CandidatePage, ...]
 
     def search(self, intent: SearchIntent) -> tuple[CandidatePage, ...]:
-        matching_pages = [
-            page for page in self.pages if page.query in intent.expanded_queries
-        ]
+        matching_pages = [page for page in self.pages if page.query in intent.expanded_queries]
         if matching_pages:
             return tuple(sorted(matching_pages, key=lambda page: page.rank))
         return self.pages

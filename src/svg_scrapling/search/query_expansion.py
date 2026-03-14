@@ -79,9 +79,7 @@ def expand_query_terms(
 
     expanded_terms: list[str] = [normalized_query]
     format_sequence = (
-        (preferred_format, fallback_format)
-        if fallback_format
-        else (preferred_format,)
+        (preferred_format, fallback_format) if fallback_format else (preferred_format,)
     )
 
     for language in languages:
