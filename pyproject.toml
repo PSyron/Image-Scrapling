@@ -12,11 +12,37 @@ license = { text = "Proprietary" }
 authors = [
   { name = "SVG Scrapling Maintainers" },
 ]
+keywords = [
+  "svg",
+  "scraping",
+  "cli",
+  "assets",
+  "coloring-pages",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: Other/Proprietary License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Multimedia :: Graphics",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Typing :: Typed",
+]
 dependencies = [
   "scrapling>=0.4.2",
   "typer>=0.16.0",
   "vtracer>=0.6.12",
 ]
+
+[project.urls]
+Homepage = "https://github.com/PSyron/svg_scrapling"
+Repository = "https://github.com/PSyron/svg_scrapling"
+Issues = "https://github.com/PSyron/svg_scrapling/issues"
 
 [project.scripts]
 assets = "svg_scrapling.__main__:main"
