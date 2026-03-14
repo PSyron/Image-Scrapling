@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import replace
 from pathlib import Path
 from typing import Annotated
 
@@ -10,7 +11,26 @@ import typer
 
 from svg_scrapling import __version__
 from svg_scrapling.config import FetchStrategy, FindAssetsConfig, LicenseMode, OutputFormat
-from svg_scrapling.domain import AssetFormat, SearchQuery
+from svg_scrapling.conversion import ConversionPreset, VTracerConverter
+from svg_scrapling.domain import (
+    AssetFormat,
+    ConversionStatus,
+    DownloadedAsset,
+    DownloadStatus,
+    SearchQuery,
+)
+from svg_scrapling.manifests import ManifestWriter, load_manifest_records
+from svg_scrapling.quality import HeuristicQualityScorer
+from svg_scrapling.ranking import CandidateDeduper
+from svg_scrapling.reporting import (
+    build_existing_run_layout,
+    build_manifest_summary,
+    export_manifest_csv,
+    export_summary_markdown,
+    manifest_record_to_candidate,
+    render_summary_text,
+)
+from svg_scrapling.storage import RunLayout
 
 app = typer.Typer(
     add_completion=False,
@@ -70,6 +90,49 @@ def _not_implemented(command_name: str) -> typer.Exit:
         err=True,
     )
     return typer.Exit(code=1)
+
+
+def _resolve_output_path(source_path: Path, output: Path | None) -> Path:
+    return output or source_path
+
+
+def _asset_format_from_path(path: Path) -> AssetFormat:
+    suffix = path.suffix.lower().lstrip(".")
+    if suffix == "jpg":
+        return AssetFormat.JPG
+    if suffix == "jpeg":
+        return AssetFormat.JPEG
+    if suffix == "png":
+        return AssetFormat.PNG
+    if suffix == "webp":
+        return AssetFormat.WEBP
+    if suffix == "svg":
+        return AssetFormat.SVG
+    return AssetFormat.UNKNOWN
+
+
+def _record_to_downloaded_asset(record_path: Path, record_id: str) -> DownloadedAsset:
+    return DownloadedAsset(
+        asset_id=record_id,
+        source_page_url=record_path.as_posix(),
+        asset_url=record_path.as_posix(),
+        original_format=_asset_format_from_path(record_path),
+        stored_original_path=record_path,
+        download_status=DownloadStatus.DOWNLOADED,
+    )
+
+
+def _single_asset_layout(asset_path: Path) -> RunLayout:
+    root = asset_path.parent
+    return RunLayout(
+        run_id=asset_path.stem,
+        root=root,
+        originals=root,
+        derived=root,
+        manifests=root,
+        logs=root,
+        debug=root,
+    )
 
 
 def _version_callback(value: bool) -> None:
@@ -175,8 +238,9 @@ def inspect_manifest(
         typer.Argument(exists=False, help="Manifest file to inspect."),
     ],
 ) -> None:
-    _ = manifest_path
-    raise _not_implemented("inspect-manifest")
+    records = load_manifest_records(manifest_path)
+    summary = build_manifest_summary(manifest_path, records)
+    typer.echo(render_summary_text(summary))
 
 
 @app.command("re-score")
@@ -185,9 +249,30 @@ def re_score(
         Path,
         typer.Argument(exists=False, help="Manifest file to re-score."),
     ],
+    output: Annotated[
+        Path | None,
+        typer.Option("--output", help="Optional output manifest path."),
+    ] = None,
 ) -> None:
-    _ = manifest_path
-    raise _not_implemented("re-score")
+    records = load_manifest_records(manifest_path)
+    scorer = HeuristicQualityScorer()
+    rescored_records = []
+    for record in records:
+        assessment = scorer.score(manifest_record_to_candidate(record))
+        rescored_records.append(
+            replace(
+                record,
+                quality_score=assessment.quality_score,
+                style_tags=assessment.style_tags,
+                is_outline_like=assessment.is_outline_like,
+                is_black_and_white_like=assessment.is_black_and_white_like,
+                is_kids_friendly_candidate=assessment.is_kids_friendly_candidate,
+                dedupe_hash=assessment.dedupe_hash,
+            )
+        )
+    destination = _resolve_output_path(manifest_path, output)
+    ManifestWriter(destination).write(tuple(rescored_records))
+    typer.echo(f"Re-scored {len(rescored_records)} records into {destination}")
 
 
 @app.command("convert")
@@ -196,9 +281,67 @@ def convert_assets(
         Path,
         typer.Argument(exists=False, help="Asset or manifest to convert."),
     ],
+    preset: Annotated[
+        ConversionPreset,
+        typer.Option("--preset", help="Conversion preset to apply."),
+    ] = ConversionPreset.LINE_ART_FAST,
+    output: Annotated[
+        Path | None,
+        typer.Option("--output", help="Optional output manifest path."),
+    ] = None,
 ) -> None:
-    _ = input_path
-    raise _not_implemented("convert")
+    converter = VTracerConverter()
+    if input_path.suffix == ".jsonl":
+        records = load_manifest_records(input_path)
+        run_layout = build_existing_run_layout(input_path)
+        converted_records = []
+        converted_count = 0
+        for record in records:
+            if record.stored_original_path is None or record.original_format not in {
+                AssetFormat.PNG,
+                AssetFormat.JPG,
+                AssetFormat.JPEG,
+                AssetFormat.WEBP,
+            }:
+                converted_records.append(record)
+                continue
+            converted_asset = converter.convert(
+                DownloadedAsset(
+                    asset_id=record.id,
+                    source_page_url=record.source_page_url,
+                    asset_url=record.asset_url,
+                    original_format=record.original_format,
+                    stored_original_path=record.stored_original_path,
+                    download_status=record.download_status,
+                ),
+                run_layout,
+                preset=preset,
+            )
+            converted_records.append(
+                replace(
+                    record,
+                    derived_svg_path=converted_asset.derived_svg_path,
+                    conversion_status=converted_asset.conversion_status,
+                    notes=tuple((*record.notes, *converted_asset.notes)),
+                )
+            )
+            if converted_asset.conversion_status == ConversionStatus.CONVERTED:
+                converted_count += 1
+        destination = _resolve_output_path(input_path, output)
+        ManifestWriter(destination).write(tuple(converted_records))
+        typer.echo(f"Converted {converted_count} manifest records into {destination}")
+        return
+
+    downloaded_asset = _record_to_downloaded_asset(input_path, input_path.stem)
+    converted_asset = converter.convert(
+        downloaded_asset,
+        _single_asset_layout(input_path),
+        preset=preset,
+    )
+    if converted_asset.conversion_status != ConversionStatus.CONVERTED:
+        typer.echo(f"Conversion failed: {converted_asset.notes}", err=True)
+        raise typer.Exit(code=1)
+    typer.echo(str(converted_asset.derived_svg_path))
 
 
 @app.command("dedupe")
@@ -207,9 +350,39 @@ def dedupe_assets(
         Path,
         typer.Argument(exists=False, help="Manifest file to deduplicate."),
     ],
+    output: Annotated[
+        Path | None,
+        typer.Option("--output", help="Optional output manifest path."),
+    ] = None,
 ) -> None:
-    _ = manifest_path
-    raise _not_implemented("dedupe")
+    records = load_manifest_records(manifest_path)
+    dedupe_result = CandidateDeduper().dedupe(
+        tuple(manifest_record_to_candidate(record) for record in records)
+    )
+    record_by_id = {record.id: record for record in records}
+    deduped_records = []
+    for kept_candidate in dedupe_result.kept:
+        original_record = record_by_id[kept_candidate.candidate.id]
+        deduped_records.append(
+            replace(
+                original_record,
+                dedupe_hash=kept_candidate.dedupe_key,
+                notes=tuple(
+                    (
+                        *original_record.notes,
+                        f"provenance_pages:{len(kept_candidate.provenance_page_urls)}",
+                        f"asset_urls:{len(kept_candidate.asset_urls)}",
+                    )
+                ),
+            )
+        )
+    destination = _resolve_output_path(manifest_path, output)
+    ManifestWriter(destination).write(tuple(deduped_records))
+    typer.echo(
+        "Dedupe kept "
+        f"{len(deduped_records)} records and removed "
+        f"{dedupe_result.duplicates_removed} duplicates into {destination}"
+    )
 
 
 @app.command("export-report")
@@ -218,6 +391,19 @@ def export_report(
         Path,
         typer.Argument(exists=False, help="Manifest file to summarize."),
     ],
+    csv_output: Annotated[
+        Path | None,
+        typer.Option("--csv-output", help="Optional CSV export path."),
+    ] = None,
+    markdown_output: Annotated[
+        Path | None,
+        typer.Option("--markdown-output", help="Optional Markdown summary path."),
+    ] = None,
 ) -> None:
-    _ = manifest_path
-    raise _not_implemented("export-report")
+    records = load_manifest_records(manifest_path)
+    summary = build_manifest_summary(manifest_path, records)
+    if csv_output is not None:
+        export_manifest_csv(csv_output, records)
+    if markdown_output is not None:
+        export_summary_markdown(markdown_output, summary)
+    typer.echo(render_summary_text(summary))
