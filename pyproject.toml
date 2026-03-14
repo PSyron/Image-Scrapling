@@ -12,7 +12,9 @@ license = { text = "Proprietary" }
 authors = [
   { name = "SVG Scrapling Maintainers" },
 ]
-dependencies = []
+dependencies = [
+  "typer>=0.16.0",
+]
 
 [project.scripts]
 assets = "svg_scrapling.__main__:main"
@@ -49,4 +51,3 @@ strict = true
 files = ["src", "apps"]
 explicit_package_bases = true
 mypy_path = ["src", "apps"]
-
