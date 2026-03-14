@@ -10,7 +10,7 @@ Core model:
 
 - Start from the repository and the current issue, not from assumptions.
 - Non-trivial work starts from an explicit issue.
-- Every implementation commit must reference the issue that authorized the work.
+- Every implementation commit must reference the issue that authorized the work, with the issue number at the start of the subject line.
 - Work directly on the current branch or `main` by default.
 - Create a dedicated branch only for risky or potentially breaking work, or when explicitly requested.
 - Push only after the relevant validation for the changed area passes.
@@ -95,7 +95,7 @@ Current state:
 - Explore first. Do not implement from memory when the answer is discoverable from the repo or the active issue.
 - Open or link an issue before starting non-trivial work.
 - Keep issue scope narrow enough that one issue can be completed, validated, and committed cleanly on `main`.
-- Reference the issue number in every implementation commit, for example: `Add query expansion templates (#5)`.
+- Reference the issue number at the start of every implementation commit, for example: `#5 add query expansion templates`.
 - Prefer small, auditable commits over broad cleanup or speculative refactors.
 - Default to working on `main`. Do not create branches for routine issue work in this repository.
 - Consider a dedicated branch only if the change is potentially breaking, hard to integrate incrementally, or explicitly requested.
@@ -115,6 +115,7 @@ Commit workflow:
 
 - One coherent issue per commit sequence.
 - Every commit must be traceable to one issue.
+- Put the issue reference first in the commit subject, for example: `#174 add Hermes frozen secure E2E benchmark workflow`.
 - Avoid mixing unrelated cleanup into implementation commits.
 - Do not push until the validation relevant to the touched subsystem passes locally.
 
