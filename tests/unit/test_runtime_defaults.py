@@ -1,8 +1,9 @@
-from svg_scrapling.config import FindAssetsConfig
+from svg_scrapling.config import DiscoveryProvider, FindAssetsConfig
 from svg_scrapling.runtime import (
     RuntimeFactories,
     build_default_pipeline_dependencies,
     default_runtime_factories,
+    ordered_discovery_providers_for,
 )
 from svg_scrapling.scraping import FetchOrchestrator, StaticHtmlFetcher
 from svg_scrapling.search import CandidatePage, FakeSearchProvider
@@ -23,8 +24,26 @@ def test_default_runtime_factories_include_live_provider_and_fetch_defaults() ->
         factories=default_runtime_factories(),
     )
 
-    assert dependencies.search_provider.name == "duckduckgo_html"
+    assert dependencies.search_provider.name == "duckduckgo_html->bing_html"
     assert dependencies.fetch_orchestrator is not None
+
+
+def test_ordered_discovery_providers_respect_preferred_provider_and_disables() -> None:
+    config = FindAssetsConfig(query="tiger coloring page")
+    brave_first = FindAssetsConfig(
+        query="tiger coloring page",
+        provider=DiscoveryProvider.BING_HTML,
+        disabled_providers=frozenset(),
+    )
+
+    assert ordered_discovery_providers_for(config) == (
+        config.provider,
+        DiscoveryProvider.BING_HTML,
+    )
+    assert ordered_discovery_providers_for(brave_first) == (
+        brave_first.provider,
+        DiscoveryProvider.DUCKDUCKGO_HTML,
+    )
 
 
 def test_default_runtime_builder_accepts_test_factories() -> None:

@@ -6,7 +6,12 @@ from dataclasses import dataclass
 
 from svg_scrapling.config import DiscoveryProvider, FindAssetsConfig
 from svg_scrapling.runtime.composition import RuntimeCompositionError
-from svg_scrapling.search import DuckDuckGoHtmlSearchProvider, SearchProvider
+from svg_scrapling.search import (
+    BingHtmlSearchProvider,
+    DuckDuckGoHtmlSearchProvider,
+    FallbackSearchProvider,
+    SearchProvider,
+)
 
 
 @dataclass(frozen=True)
@@ -26,16 +31,45 @@ def discovery_provider_runtime_settings_for(
     )
 
 
+def ordered_discovery_providers_for(config: FindAssetsConfig) -> tuple[DiscoveryProvider, ...]:
+    ordered = [config.provider]
+    for provider in DiscoveryProvider:
+        if provider == config.provider or provider in config.disabled_providers:
+            continue
+        ordered.append(provider)
+    return tuple(ordered)
+
+
 def build_default_search_provider(config: FindAssetsConfig) -> SearchProvider:
     if config.provider in config.disabled_providers:
         raise RuntimeCompositionError(
             f"Selected provider {config.provider.value} is disabled for this run"
         )
-    if config.provider == DiscoveryProvider.DUCKDUCKGO_HTML:
-        settings = discovery_provider_runtime_settings_for(config)
-        return DuckDuckGoHtmlSearchProvider(
-            timeout_seconds=settings.timeout_seconds,
-            retries=settings.retries,
-            max_queries_per_search=settings.max_queries_per_search,
-        )
-    raise RuntimeCompositionError(f"Unsupported discovery provider {config.provider.value}")
+    settings = discovery_provider_runtime_settings_for(config)
+    provider_instances: list[SearchProvider] = []
+    for provider in ordered_discovery_providers_for(config):
+        if provider == DiscoveryProvider.DUCKDUCKGO_HTML:
+            provider_instances.append(
+                DuckDuckGoHtmlSearchProvider(
+                    timeout_seconds=settings.timeout_seconds,
+                    retries=settings.retries,
+                    max_queries_per_search=settings.max_queries_per_search,
+                )
+            )
+            continue
+        if provider == DiscoveryProvider.BING_HTML:
+            provider_instances.append(
+                BingHtmlSearchProvider(
+                    timeout_seconds=settings.timeout_seconds,
+                    retries=settings.retries,
+                    max_queries_per_search=settings.max_queries_per_search,
+                )
+            )
+            continue
+        raise RuntimeCompositionError(f"Unsupported discovery provider {provider.value}")
+
+    if not provider_instances:
+        raise RuntimeCompositionError("No discovery providers remain enabled for this run")
+    if len(provider_instances) == 1:
+        return provider_instances[0]
+    return FallbackSearchProvider(tuple(provider_instances))

@@ -18,6 +18,7 @@ from svg_scrapling.runtime.providers import (
     DiscoveryProviderRuntimeSettings,
     build_default_search_provider,
     discovery_provider_runtime_settings_for,
+    ordered_discovery_providers_for,
 )
 
 __all__ = [
@@ -31,5 +32,6 @@ __all__ = [
     "build_pipeline_dependencies",
     "discovery_provider_runtime_settings_for",
     "default_runtime_factories",
+    "ordered_discovery_providers_for",
     "static_fetch_runtime_settings_for",
 ]

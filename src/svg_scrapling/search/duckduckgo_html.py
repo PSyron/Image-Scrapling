@@ -12,13 +12,13 @@ from urllib.request import Request, urlopen
 from scrapling import Selector
 
 from svg_scrapling.domain import SearchIntent
-from svg_scrapling.search.providers import CandidatePage, SearchProvider
+from svg_scrapling.search.providers import CandidatePage, SearchProvider, SearchProviderError
 
 _WHITESPACE_PATTERN = re.compile(r"\s+")
 _TAG_PATTERN = re.compile(r"<[^>]+>")
 
 
-class ProviderSearchError(RuntimeError):
+class ProviderSearchError(SearchProviderError):
     """Raised when live provider discovery cannot complete safely."""
 
 

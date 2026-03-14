@@ -1,4 +1,4 @@
-"""Search provider contracts and a fake provider for tests."""
+"""Search provider contracts and runtime composition helpers."""
 
 from __future__ import annotations
 
@@ -6,6 +6,10 @@ from dataclasses import dataclass
 from urllib.parse import urlparse
 
 from svg_scrapling.domain import SearchIntent
+
+
+class SearchProviderError(RuntimeError):
+    """Explicit provider failure that may trigger an ordered fallback."""
 
 
 @dataclass(frozen=True)
@@ -48,6 +52,58 @@ class SearchProvider:
 
     def search(self, intent: SearchIntent) -> tuple[CandidatePage, ...]:
         raise NotImplementedError
+
+
+@dataclass(frozen=True)
+class FallbackSearchProvider(SearchProvider):
+    """Execute providers in order and continue on explicit provider failures."""
+
+    providers: tuple[SearchProvider, ...]
+    name: str = "fallback_search"
+
+    def __post_init__(self) -> None:
+        if not self.providers:
+            raise ValueError("providers must not be empty")
+        ordered_names = "->".join(provider.name for provider in self.providers)
+        object.__setattr__(self, "name", ordered_names)
+
+    def search(self, intent: SearchIntent) -> tuple[CandidatePage, ...]:
+        collected: list[CandidatePage] = []
+        seen_urls: set[str] = set()
+        errors: list[str] = []
+
+        for provider in self.providers:
+            try:
+                pages = provider.search(intent)
+            except SearchProviderError as exc:
+                errors.append(f"{provider.name}: {exc}")
+                continue
+
+            for page in pages:
+                normalized_key = page.url.casefold()
+                if normalized_key in seen_urls:
+                    continue
+                seen_urls.add(normalized_key)
+                collected.append(
+                    CandidatePage(
+                        url=page.url,
+                        query=page.query,
+                        provider_name=page.provider_name,
+                        rank=len(collected) + 1,
+                        title=page.title,
+                        snippet=page.snippet,
+                        domain=page.domain,
+                    )
+                )
+                if len(collected) >= intent.search_query.requested_count:
+                    return tuple(collected)
+
+        if collected:
+            return tuple(collected)
+
+        if errors:
+            raise SearchProviderError("all configured providers failed: " + "; ".join(errors))
+        return ()
 
 
 @dataclass(frozen=True)

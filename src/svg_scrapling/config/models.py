@@ -44,6 +44,7 @@ class FetchStrategy(_StringEnum):
 
 class DiscoveryProvider(_StringEnum):
     DUCKDUCKGO_HTML = "duckduckgo_html"
+    BING_HTML = "bing_html"
 
 
 @dataclass(frozen=True)
@@ -101,6 +102,5 @@ class FindAssetsConfig:
             raise ValueError(
                 f"provider {self.provider.value} cannot be selected and disabled at the same time"
             )
-
         object.__setattr__(self, "allowed_licenses", normalized_licenses)
         object.__setattr__(self, "disabled_providers", normalized_disabled_providers)

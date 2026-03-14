@@ -3,10 +3,14 @@ from pathlib import Path
 import pytest
 
 from svg_scrapling.search import (
+    BingHtmlSearchProvider,
     CandidatePage,
     DuckDuckGoHtmlSearchProvider,
     FakeSearchProvider,
+    FallbackSearchProvider,
+    SearchProviderError,
     build_search_intent,
+    parse_bing_results,
     parse_duckduckgo_results,
 )
 
@@ -122,6 +126,23 @@ def test_parse_duckduckgo_results_decodes_redirects_and_deduplicates() -> None:
     assert pages[0].snippet == "Free tiger coloring page outline for kids."
 
 
+def test_parse_bing_results_extracts_result_cards() -> None:
+    html = Path("tests/fixtures/search/bing_results.html").read_text(encoding="utf-8")
+
+    pages = parse_bing_results(
+        html,
+        query="tiger coloring page",
+        provider_name="bing_html",
+    )
+
+    assert [page.url for page in pages] == [
+        "https://example.com/tiger-outline",
+        "https://animals.example.org/tiger-coloring",
+    ]
+    assert pages[0].title == "Tiger outline printable SVG"
+    assert pages[0].snippet == "Free tiger coloring page outline for kids."
+
+
 def test_duckduckgo_provider_stops_after_requested_count() -> None:
     html = Path("tests/fixtures/search/duckduckgo_results.html").read_text(encoding="utf-8")
     intent = build_search_intent(
@@ -139,3 +160,56 @@ def test_duckduckgo_provider_stops_after_requested_count() -> None:
     assert len(pages) == 1
     assert pages[0].url == "https://example.com/tiger-outline"
     assert len(transport.calls) == 1
+
+
+def test_bing_provider_stops_after_requested_count() -> None:
+    html = Path("tests/fixtures/search/bing_results.html").read_text(encoding="utf-8")
+    intent = build_search_intent(
+        query="tiger coloring page",
+        requested_count=1,
+    )
+    transport = FixtureSearchTransport(html)
+    provider = BingHtmlSearchProvider(
+        transport=transport,
+        max_queries_per_search=3,
+    )
+
+    pages = provider.search(intent)
+
+    assert len(pages) == 1
+    assert pages[0].url == "https://example.com/tiger-outline"
+    assert len(transport.calls) == 1
+
+
+def test_fallback_search_provider_uses_next_provider_after_explicit_failure() -> None:
+    intent = build_search_intent(query="tiger coloring page", requested_count=2)
+
+    class BrokenProvider:
+        name = "broken"
+
+        def search(self, _intent):
+            raise SearchProviderError("provider unavailable")
+
+    fallback = FallbackSearchProvider(
+        providers=(
+            BrokenProvider(),
+            FakeSearchProvider(
+                name="fake-provider",
+                pages=(
+                    CandidatePage(
+                        url="https://example.com/1",
+                        query="tiger coloring page",
+                        provider_name="fake-provider",
+                        rank=9,
+                    ),
+                ),
+            ),
+        )
+    )
+
+    pages = fallback.search(intent)
+
+    assert fallback.name == "broken->fake-provider"
+    assert len(pages) == 1
+    assert pages[0].rank == 1
+    assert pages[0].provider_name == "fake-provider"
