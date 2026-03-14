@@ -8,6 +8,10 @@ from svg_scrapling.extraction.contracts import (
     GenericAssetExtractor,
     RejectedAssetHint,
 )
+from svg_scrapling.extraction.heuristics import (
+    HtmlExtractionInput,
+    HtmlHeuristicExtractor,
+)
 
 __all__ = [
     "ExtractedAssetHint",
@@ -15,5 +19,7 @@ __all__ = [
     "ExtractionRegistry",
     "ExtractionResult",
     "GenericAssetExtractor",
+    "HtmlExtractionInput",
+    "HtmlHeuristicExtractor",
     "RejectedAssetHint",
 ]

@@ -1,9 +1,13 @@
+from pathlib import Path
+
 from svg_scrapling.domain import AssetFormat
 from svg_scrapling.extraction import (
     ExtractedAssetHint,
     ExtractionInput,
     ExtractionRegistry,
     GenericAssetExtractor,
+    HtmlExtractionInput,
+    HtmlHeuristicExtractor,
 )
 
 
@@ -79,3 +83,44 @@ def test_extraction_registry_uses_default_for_unknown_domain() -> None:
 
     assert len(result.candidates) == 1
     assert result.candidates[0].domain == "unknown.example"
+
+
+def test_html_heuristic_extractor_discovers_svg_raster_and_embedded_svg() -> None:
+    fixture_path = Path("tests/fixtures/extraction/source_page.html")
+    extractor = HtmlHeuristicExtractor()
+
+    result = extractor.extract_page(
+        HtmlExtractionInput(
+            source_page_url="https://example.com/page",
+            query="tiger coloring page",
+            domain="example.com",
+            html=fixture_path.read_text(encoding="utf-8"),
+        )
+    )
+
+    assert [candidate.original_format for candidate in result.candidates] == [
+        AssetFormat.SVG,
+        AssetFormat.PNG,
+        AssetFormat.SVG,
+    ]
+    assert result.candidates[0].license_hint is not None
+    assert result.candidates[0].author_or_owner == "Jane Doe"
+    assert result.candidates[1].alt_text == "Tiger outline printable"
+    assert result.candidates[2].asset_url.endswith("#embedded-svg-1")
+    assert "embedded_svg" in result.candidates[2].notes
+
+
+def test_html_heuristic_extractor_rejects_low_value_thumbnail_signals() -> None:
+    fixture_path = Path("tests/fixtures/extraction/source_page.html")
+    extractor = HtmlHeuristicExtractor()
+
+    result = extractor.extract_page(
+        HtmlExtractionInput(
+            source_page_url="https://example.com/page",
+            query="tiger coloring page",
+            domain="example.com",
+            html=fixture_path.read_text(encoding="utf-8"),
+        )
+    )
+
+    assert [rejection.reason for rejection in result.rejected] == ["low_value_signal:thumbnail"]
