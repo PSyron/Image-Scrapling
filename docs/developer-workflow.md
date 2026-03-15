@@ -8,6 +8,12 @@ Run the project from the repository root:
 uv sync --group dev
 ```
 
+If you need the raster-to-SVG conversion backend during development:
+
+```bash
+uv sync --group dev --extra conversion
+```
+
 The conversion backend currently requires Python `>=3.10,<3.14` because the upstream VTracer binding is unstable on Python `3.14`. Follow-up work is tracked in GitHub issue `#20`.
 
 ## Running The CLI
@@ -35,6 +41,39 @@ Operational notes:
 - `--run-id` makes the run resumable and reuses the same run directory on later executions.
 - `--skip-existing-downloads` is enabled by default so deterministic original asset paths are not downloaded twice.
 - `--disable-provider` can explicitly block a provider for a run and should fail loudly if it conflicts with the selected provider.
+
+## Public Package Usage
+
+Install the published package from PyPI:
+
+```bash
+uv pip install svg-scrapling==0.1.0
+```
+
+or:
+
+```bash
+python -m pip install svg-scrapling==0.1.0
+```
+
+Install with optional conversion support:
+
+```bash
+uv pip install "svg-scrapling[conversion]==0.1.0"
+```
+
+Smoke-check the installed package:
+
+```bash
+python -c "import svg_scrapling; print(svg_scrapling.__version__)"
+assets --help
+```
+
+Upgrade a consumer environment:
+
+```bash
+uv pip install --upgrade svg-scrapling
+```
 
 ## Validation
 
@@ -66,6 +105,27 @@ If local or CI credentials are ever needed for testing alternate registries, sto
 - GitHub environment secrets
 - CI secret storage
 - local user-level config outside the repository root
+
+## Public Release Flow
+
+The public PyPI release flow is now verified by the successful `0.1.0` release.
+
+Maintainer checklist:
+
+1. Update `project.version` in `pyproject.toml`.
+2. Run the full local validation set.
+3. Push the release candidate to `main`.
+4. Start the `Release` GitHub Actions workflow manually with `version=X.Y.Z`.
+5. Approve the `release` environment when the workflow reaches the publish job.
+6. Confirm that PyPI contains `svg-scrapling==X.Y.Z`.
+7. Confirm that GitHub has tag `vX.Y.Z` and a matching GitHub Release.
+
+Release invariants:
+
+- do not publish from normal pushes
+- do not create the release tag by hand before the workflow succeeds
+- do not add long-lived PyPI API tokens to the repository
+- keep Trusted Publisher as the publish path
 
 ## Run Output Layout
 

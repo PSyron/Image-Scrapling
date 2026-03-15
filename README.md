@@ -9,6 +9,51 @@ Published package and import names:
 - package: `svg-scrapling`
 - import: `svg_scrapling`
 
+## Install From PyPI
+
+Install the published package:
+
+```bash
+uv pip install svg-scrapling==0.1.0
+```
+
+or with `pip`:
+
+```bash
+python -m pip install svg-scrapling==0.1.0
+```
+
+If you want PNG-to-SVG conversion through VTracer, install the optional conversion extra:
+
+```bash
+uv pip install "svg-scrapling[conversion]==0.1.0"
+```
+
+or:
+
+```bash
+python -m pip install "svg-scrapling[conversion]==0.1.0"
+```
+
+Verify the install:
+
+```bash
+python -c "import svg_scrapling; print(svg_scrapling.__version__)"
+assets --help
+```
+
+Upgrade to a newer published release:
+
+```bash
+uv pip install --upgrade svg-scrapling
+```
+
+or:
+
+```bash
+python -m pip install --upgrade svg-scrapling
+```
+
 ## Bootstrap
 
 Run the standard project commands from the repository root:
@@ -31,7 +76,7 @@ Install dependencies first:
 uv sync --group dev
 ```
 
-If you want PNG-to-SVG conversion through VTracer, install the optional conversion extra:
+If you want PNG-to-SVG conversion through VTracer in the development environment, install the optional conversion extra:
 
 ```bash
 uv sync --group dev --extra conversion
@@ -191,6 +236,7 @@ Deep internal module imports outside those entrypoints should be treated as unst
 - distribution version comes from `project.version` in `pyproject.toml`
 - runtime version is read from the installed package metadata
 - release tags should use the format `vX.Y.Z`
+- public releases are published to PyPI from the guarded GitHub Actions release workflow
 
 ## Current Limitations
 
